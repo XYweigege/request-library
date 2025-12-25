@@ -24,7 +24,7 @@ export function initRequest(config = {}) {
   setGlobalConfig({ baseURL, headers, timeout });
   
   // 注入fetch请求实现
-  inject(fetchRequestor.requestor);
+  inject(fetchRequestor);
   
   // 返回包含所有业务模块的请求库实例
   return {
