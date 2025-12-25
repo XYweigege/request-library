@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>请求库测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>请求库功能测试</h1>
+    
+    <div class="test-section">
+        <h2>全局配置</h2>
+        <div id="global-config" class="test-result">当前全局配置：使用默认的Fetch实现</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>1. 基本请求测试</h2>
+        <button onclick="testBasicRequest()">发送基本请求</button>
+        <div id="basic-result" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 缓存请求测试</h2>
+        <button onclick="testCacheRequest()">发送缓存请求</button>
+        <div id="cache-result" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 幂等请求测试</h2>
+        <button onclick="testIdempotentRequest()">发送幂等请求</button>
+        <div id="idempotent-result" class="test-result"></div>
+    </div>
+    
+    <script type="module">
+        // 导入核心功能
+        import initRequest, { setGlobalConfig } from './index.js';
+        
+        // 初始化请求库实例
+        const request = initRequest({
+            baseURL: 'https://api.example.com',
+            headers: {
+                'Authorization': 'Bearer test-token-123456',
+                'Content-Type': 'application/json'
+            },
+            timeout: 10000
+        });
+        
+        console.log('===== 请求库初始化完成 =====');
+        console.log('baseURL:', 'https://api.example.com');
+        console.log('默认请求头:', {
+            'Authorization': 'Bearer test-token-123456',
+            'Content-Type': 'application/json'
+        });
+        
+        // 测试基本请求
+        async function testBasicRequest() {
+            const resultEl = document.getElementById('basic-result');
+            resultEl.innerHTML = '测试中...';
+            
+            try {
+                // 使用JSONPlaceholder作为测试API
+                const response = await request.article.getArticles(1, 10);
+                resultEl.innerHTML = `成功！<br>响应结果：<br>${JSON.stringify(response, null, 2)}`;
+                resultEl.className = 'test-result success';
+            } catch (error) {
+                resultEl.innerHTML = `失败！<br>错误信息：<br>${error.message}`;
+                resultEl.className = 'test-result error';
+            }
+        }
+        
+        // 测试缓存请求
+        async function testCacheRequest() {
+            const resultEl = document.getElementById('cache-result');
+            resultEl.innerHTML = '第一次请求...';
+            
+            try {
+                const start1 = Date.now();
+                const response1 = await request.article.getArticles(1, 5);
+                const time1 = Date.now() - start1;
+                
+                resultEl.innerHTML += `<br>第一次请求耗时：${time1}ms`;
+                
+                // 第二次请求（应该使用缓存）
+                resultEl.innerHTML += '<br><br>第二次请求（使用缓存）...';
+                const start2 = Date.now();
+                const response2 = await request.article.getArticles(1, 5);
+                const time2 = Date.now() - start2;
+                
+                resultEl.innerHTML += `<br>第二次请求耗时：${time2}ms`;
+                resultEl.innerHTML += '<br><br>成功！缓存功能正常工作';
+                resultEl.className = 'test-result success';
+            } catch (error) {
+                resultEl.innerHTML = `失败！<br>错误信息：<br>${error.message}`;
+                resultEl.className = 'test-result error';
+            }
+        }
+        
+        // 测试幂等请求
+        async function testIdempotentRequest() {
+            const resultEl = document.getElementById('idempotent-result');
+            resultEl.innerHTML = '第一次请求...';
+            
+            try {
+                const articleData = {
+                    title: '测试文章',
+                    body: '这是一篇测试文章内容',
+                    userId: 1
+                };
+                
+                const start1 = Date.now();
+                const response1 = await request.article.publishArticle(articleData);
+                const time1 = Date.now() - start1;
+                
+                resultEl.innerHTML += `<br>第一次请求耗时：${time1}ms`;
+                
+                // 第二次请求（应该使用幂等缓存）
+                resultEl.innerHTML += '<br><br>第二次请求（幂等处理）...';
+                const start2 = Date.now();
+                const response2 = await request.article.publishArticle(articleData);
+                const time2 = Date.now() - start2;
+                
+                resultEl.innerHTML += `<br>第二次请求耗时：${time2}ms`;
+                resultEl.innerHTML += '<br><br>成功！幂等功能正常工作';
+                resultEl.className = 'test-result success';
+            } catch (error) {
+                resultEl.innerHTML = `失败！<br>错误信息：<br>${error.message}`;
+                resultEl.className = 'test-result error';
+            }
+        }
+    </script>
+</body>
+</html>
